@@ -3,6 +3,7 @@ from flask import url_for, session, abort
 from flask.ext.login import current_user
 from flask.ext.babel import lazy_gettext
 from datetime import datetime
+import scrypt, random
 
 class PollExpiredException(Exception):
     def __init__(self, poll):
@@ -27,6 +28,24 @@ def update_user_data(username, data):
     user.email = data["mail"]
     db.session.commit()
 
+# password stuff (scrypt yay)
+
+def randstr(length):
+    return ''.join(chr(random.randint(0,255)) for i in range(length))
+
+def hash_password(password, maxtime=0.5, datalength=256):
+    salt = randstr(datalength)
+    hashed_password = scrypt.encrypt(salt, password.encode('utf-8'), maxtime=maxtime)
+    return bytearray(hashed_password)
+
+def verify_password(hashed_password, guessed_password, maxtime=300):
+    try:
+        scrypt.decrypt(hashed_password, guessed_password.encode('utf-8'), maxtime)
+        return True
+    except scrypt.error as e:
+        print "scrypt error: %s" % e    # Not fatal but a necessary measure if server is under heavy load
+        return False
+
 @login_manager.user_loader
 def get_user(username):
     return User.query.filter_by(username=username).first()
@@ -36,6 +55,7 @@ class User(db.Model):
     firstname = db.Column(db.String(80))
     lastname = db.Column(db.String(80))
     username = db.Column(db.String(80))
+    password = db.Column(db.LargeBinary)
     email = db.Column(db.String(80))
     preferred_language = db.Column(db.String(80))
 
@@ -67,6 +87,10 @@ class User(db.Model):
     def require_admin(self):
         if not current_user.is_authenticated() or not current_user.is_admin:
             abort(403)
+
+    def set_password(self, password):
+        self.password = hash_password(password.encode("ascii"))
+
 
 
 class Poll(db.Model):

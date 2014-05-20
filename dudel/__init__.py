@@ -9,6 +9,7 @@ from flask.ext.migrate import Migrate, MigrateCommand
 from flask.ext.script import Manager
 
 app = Flask(__name__)
+app.config.from_pyfile("../config.py.example", silent=True)
 app.config.from_pyfile("../config.py", silent=True)
 manager = Manager(app)
 db = SQLAlchemy(app)

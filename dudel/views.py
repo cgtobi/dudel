@@ -53,6 +53,47 @@ def login():
 
     return render_template("login.html", form=form)
 
+@app.route("/register", methods=("GET", "POST"))
+def register():
+    if app.config["AUTH_MODE"] != "password" or not app.config["REGISTRATIONS_ENABLED"]:
+        abort(404)
+    if current_user.is_authenticated():
+        flash("You are already logged in.", "success")
+        return redirect(request.args.get("next") or url_for("index"))
+    form = RegisterForm()
+
+    if form.validate_on_submit():
+        user = User()
+        form.populate_obj(user)
+        user.set_password(form.password1.data)
+        db.session.add(user)
+        db.session.commit()
+        login_user(user)
+        flash(gettext("You were logged in, %(name)s.", name=user.displayname), "success")
+
+        return redirect(request.args.get("next") or url_for("index"))
+
+    return render_template("register.html", form=form)
+
+@app.route("/settings", methods=("GET", "POST"))
+@login_required
+def settings():
+    if app.config["AUTH_MODE"] != "password":
+        abort(404)
+
+    form = SettingsForm(obj=current_user)
+
+    if form.validate_on_submit():
+        form.populate_obj(current_user)
+        if form.password1.data:
+            print "Setting new password"
+            current_user.set_password(form.password1.data)
+        db.session.commit()
+        flash("Your settings were updated.", "success")
+        return redirect(url_for("settings"))
+
+    return render_template("settings.html", form=form)
+
 @app.route("/logout")
 def logout():
     if current_user.is_authenticated():
