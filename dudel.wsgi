@@ -4,7 +4,7 @@ from os.path import *
 
 # Activate the virtual environment to load the library.
 path = dirname(abspath(__file__))
-activate_this = join(path, "env", "bin", "activate_this.py")
+activate_this = join(path, "bin", "activate_this.py")
 execfile(activate_this, dict(__file__ = activate_this))
 
 sys.path.insert(0, path)
