@@ -22,8 +22,8 @@ def update_user_data(username, data):
         db.session.add(user)
 
     if "givenName" in data:
-        user.firstname = data["givenName"]
-    user.lastname = data["sn"]
+        user.firstname = data["givenName"].decode('utf8')
+    user.lastname = data["sn"].decode('utf8')
     user.email = data["mail"]
     db.session.commit()
 
